@@ -1,0 +1,11 @@
+# IDE
+.idea
+.vscode
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
+.python-version
+
+# temporary working directory
+tmp/

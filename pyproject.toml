@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "hotels"
+version = "0.1"
+description = "Streamlit Dashboard for Hotels data set"
+authors = ["Hironori Sakai <stdiff@outlook.de>"]
+license = "MIT License"
+
+[tool.poetry.dependencies]
+python = ">=3.9.11,<3.10"
+streamlit = "1.22.0"
+pandas = "1.5.3"
+numpy = "1.24.3"
+altair = "4.2.2"
+
+[tool.poetry.dev-dependencies]
+black = "^23.3.0"
+isort = "^5.12.0"
+jupyterlab = "^3.6.3"
+jupyterlab-code-formatter = "^1.6.1"
+digautoprofiler = "^1.0.1"
+
+[tool.black]
+line-length = 120
+target-version = ["py39"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
