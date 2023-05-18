@@ -7,5 +7,8 @@ __pycache__/
 .ipynb_checkpoints/
 .python-version
 
+# credentials
+.streamlit/secrets.toml
+
 # temporary working directory
 tmp/
