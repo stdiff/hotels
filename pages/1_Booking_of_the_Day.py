@@ -7,10 +7,11 @@ import altair as alt
 from hotels.dashboard import set_page_config
 from hotels.models import Hotel, ReservationStatus
 from hotels.processing import enrich_reservation_data
-from hotels.data_local import DataLoaderLocal
+# from hotels.data_local import DataLoaderLocal
+from hotels.data_snowflake import DataLoaderSnowflake
 
-data_loader = DataLoaderLocal()
-
+# data_loader = DataLoaderLocal()
+data_loader = DataLoaderSnowflake()
 
 @st.cache_data
 def get_min_max_dates() -> (dt.date, dt.date):
