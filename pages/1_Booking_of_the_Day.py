@@ -5,19 +5,21 @@ import streamlit as st
 import altair as alt
 
 from hotels.dashboard import set_page_config
-from hotels.data import get_min_date, get_max_date, load_raw_data_from_local
 from hotels.models import Hotel, ReservationStatus
 from hotels.processing import enrich_reservation_data
+from hotels.data_local import DataLoaderLocal
+
+data_loader = DataLoaderLocal()
 
 
 @st.cache_data
 def get_min_max_dates() -> (dt.date, dt.date):
-    return get_min_date(), get_max_date()
+    return data_loader.get_min_date(), data_loader.get_max_date()
 
 
 @st.cache_data
 def fetch_row_data() -> pd.DataFrame:
-    df = load_raw_data_from_local()
+    df = data_loader.load_raw_data()
     return enrich_reservation_data(df)
 
 

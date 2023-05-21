@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Dict
 import datetime as dt
 
@@ -12,17 +13,18 @@ def download_data():
     print(f"DOWNLOADED: {DATA_PATH}")
 
 
-def load_raw_data_from_local() -> pd.DataFrame:
-    df = pd.read_parquet(DATA_PATH)
-    return df
+class DataLoader(ABC):
+    @abstractmethod
+    def load_raw_data(self) -> pd.DataFrame:
+        raise NotImplemented
 
+    @abstractmethod
+    def get_min_date(self) -> dt.date:
+        raise NotImplemented
 
-def get_min_date() -> dt.date:
-    return dt.date(2015, 7, 1)
-
-
-def get_max_date() -> dt.date:
-    return dt.date(2017, 8, 31)
+    @abstractmethod
+    def get_max_date(self) -> dt.date:
+        raise NotImplemented
 
 
 def load_country_code_mapping() -> Dict[str, str]:
