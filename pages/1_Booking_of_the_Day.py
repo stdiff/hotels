@@ -5,21 +5,15 @@ import streamlit as st
 import altair as alt
 
 from hotels.dashboard import set_page_config
+from hotels.data_retrieval import load_raw_data, min_date, max_date
+from hotels.data_processing import Preprocessor
 from hotels.models import Hotel, ReservationStatus
-from hotels.processing import enrich_reservation_data
-from hotels.data_local import DataLoaderLocal
-
-data_loader = DataLoaderLocal()
-
-@st.cache_data
-def get_min_max_dates() -> (dt.date, dt.date):
-    return data_loader.get_min_date(), data_loader.get_max_date()
 
 
 @st.cache_data
-def fetch_row_data() -> pd.DataFrame:
-    df = data_loader.load_raw_data()
-    return enrich_reservation_data(df)
+def load_processed_booking_data() -> pd.DataFrame:
+    df = load_raw_data()
+    return Preprocessor.apply_all(df)
 
 
 def pick_stayed_lodgers(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -32,7 +26,7 @@ def pick_stayed_lodgers(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame) -> pd
     return df
 
 
-def chart_age_groups(df: pd.DataFrame) -> alt.Chart:
+def draw_age_groups(df: pd.DataFrame) -> alt.Chart:
     """
     :param df: DataFrame[adults, children, babies]
     :return: bar chart of numbers of people by age group
@@ -58,35 +52,34 @@ def chart_age_groups(df: pd.DataFrame) -> alt.Chart:
     return chart
 
 
-def chart_country_counts(df: pd.DataFrame):
+def draw_country_counts(df: pd.DataFrame, top_n: int = 5) -> alt.Chart:
     """
-
-    :param df:
+    :param df: DataFrame[country, n_lodgers]
+    :param top_n: countries under this number will be consolidated
     :return:
     """
     df_country = (
         df.groupby("country", as_index=False)["n_lodgers"]
         .sum()
-        .assign(r_lodgers=lambda x: x["n_lodgers"] / x["n_lodgers"].sum())
-        .sort_values(by="n_lodgers", ascending=False)
+        .assign(
+            r_lodgers=lambda x: x["n_lodgers"] / x["n_lodgers"].sum(),
+            rank=lambda x: x["n_lodgers"].rank(method="min", ascending=False),
+        )
     )
 
-    if len(df_country) > 5:
+    if df_country["rank"].max() > top_n:
         df_country = pd.concat(
             [
-                df_country.iloc[:5, :],
-                pd.DataFrame(
-                    {
-                        "country": ["other"],
-                        "n_lodgers": [df_country["n_lodgers"].iloc[5:].sum()],
-                        "r_lodgers": [df_country["r_lodgers"].iloc[5:].sum()],
-                    }
-                ),
+                df_country.query("rank <= @top_n"),
+                df_country.query("rank > @top_n")[["n_lodgers", "r_lodgers"]]
+                .sum()
+                .to_frame()
+                .T.assign(rank=top_n + 1, country="OTHER"),
             ],
             axis=0,
         )
 
-    order = df_country["country"].to_list()
+    order = df_country.sort_values(by="rank", ascending=True)["country"].to_list()
 
     chart = (
         alt.Chart(df_country)
@@ -105,7 +98,7 @@ def chart_country_counts(df: pd.DataFrame):
     return chart
 
 
-def chart_room_types(df: pd.DataFrame, room_type_column: str = "assigned_room_type") -> alt.Chart:
+def draw_room_type_counts(df: pd.DataFrame, room_type_column: str = "assigned_room_type") -> alt.Chart:
     """
     :param df: DataFrame[assigned_room_type, adults, children, babies, n_lodgers, checkout]
     :param room_type_column: column name of the room type
@@ -138,7 +131,7 @@ def chart_room_types(df: pd.DataFrame, room_type_column: str = "assigned_room_ty
     return chart_room_type
 
 
-def section_lodgers_from_yesterday(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
+def show_lodgers_from_yesterday_tab(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
     st.header("Lodgers from yesterday")
 
     st.markdown(
@@ -169,15 +162,15 @@ def section_lodgers_from_yesterday(hotel: Hotel, date: dt.date, df_raw: pd.DataF
     cols = st.columns(3)
     with cols.pop(0):
         st.subheader("Age groups")
-        st.altair_chart(chart_age_groups(df_stayed), use_container_width=True)
+        st.altair_chart(draw_age_groups(df_stayed), use_container_width=True)
 
     with cols.pop(0):
         st.subheader("Countries")
-        st.altair_chart(chart_country_counts(df_stayed), use_container_width=True)
+        st.altair_chart(draw_country_counts(df_stayed), use_container_width=True)
 
     with cols.pop(0):
         st.subheader("Used Room Types")
-        st.altair_chart(chart_room_types(df_stayed), use_container_width=True)
+        st.altair_chart(draw_room_type_counts(df_stayed), use_container_width=True)
 
 
 def pick_arriving_guests(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -191,7 +184,7 @@ def pick_arriving_guests(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame) -> p
     return df
 
 
-def section_new_arrivals(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
+def show_new_arrivals_tab(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
     st.header(f"Lodgers who arrive on {date}")
     st.markdown(
         """
@@ -212,10 +205,10 @@ def section_new_arrivals(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
 
     with cols[1]:
         st.subheader("Reserved room types")
-        st.altair_chart(chart_room_types(df_arrivals, "reserved_room_type"), use_container_width=True)
+        st.altair_chart(draw_room_type_counts(df_arrivals, "reserved_room_type"), use_container_width=True)
 
 
-def section_staying_lodgers(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
+def show_staying_lodgers_tab(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
     st.header("Staying Lodgers")
     st.markdown(
         """
@@ -253,42 +246,42 @@ def section_staying_lodgers(hotel: Hotel, date: dt.date, df_raw: pd.DataFrame):
 
     with col_chart:
         st.subheader("Used room types")
-        st.altair_chart(chart_room_types(df_stay), use_container_width=True)
+        st.altair_chart(draw_room_type_counts(df_stay), use_container_width=True)
 
 
 def dashboard():
     st.title("Booking of the Day")
 
-    min_date, max_date = get_min_max_dates()
-    df_raw = fetch_row_data()
+    df_raw = load_processed_booking_data()
 
-    cols = st.columns(2)
-    with cols.pop(0):
+    with st.sidebar:
         st.subheader("Choose Hotel Type")
-        hotel = st.radio(
+        selected_hotel = st.radio(
             label="hotel", options=list(Hotel), index=0, format_func=lambda h: h.value, label_visibility="collapsed"
         )
 
-    with cols.pop(0):
         st.subheader("Choose Date")
-        date = st.date_input(
+        selected_date = st.date_input(
             label="date",
             value=dt.date(2016, 1, 1),
             min_value=min_date,
             max_value=max_date,
             label_visibility="collapsed",
+            format="YYYY-MM-DD",
         )
-        st.markdown(f"Any date between {min_date} and {max_date}")
+        st.info(f"Any date between {min_date} and {max_date}")
 
-    tabs = st.tabs(["Lodgers from yesterday", "New arrivals", "Staying lodgers"])
-    with tabs[0]:
-        section_lodgers_from_yesterday(hotel, date, df_raw)
+    lodgers_from_yesterday_tab, new_arrivals_tab, staying_lodgers_tab = st.tabs(
+        ["Lodgers from yesterday", "New arrivals", "Staying lodgers"]
+    )
+    with lodgers_from_yesterday_tab:
+        show_lodgers_from_yesterday_tab(selected_hotel, selected_date, df_raw)
 
-    with tabs[1]:
-        section_new_arrivals(hotel, date, df_raw)
+    with new_arrivals_tab:
+        show_new_arrivals_tab(selected_hotel, selected_date, df_raw)
 
-    with tabs[2]:
-        section_staying_lodgers(hotel, date, df_raw)
+    with staying_lodgers_tab:
+        show_staying_lodgers_tab(selected_hotel, selected_date, df_raw)
 
 
 if __name__ == "__main__":

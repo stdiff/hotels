@@ -1,7 +1,7 @@
-from typing import Dict, Optional
+from typing import Optional
 import pandas as pd
 
-from hotels.data import load_country_code_mapping
+from hotels.data_retrieval import load_country_code_mapping
 from hotels.models import ReservationStatus
 
 
@@ -23,7 +23,7 @@ def _rows_to_date(data: pd.DataFrame):
 
 
 class Preprocessor:
-    """all methods are static methods which manipulate dataframes in place"""
+    """all methods are static methods which manipulate dataframes in place except apply_all()"""
 
     @staticmethod
     def convert_data_type(df: pd.DataFrame):
@@ -33,7 +33,7 @@ class Preprocessor:
     def remove_invalid_records(df: pd.DataFrame):
         """
         - Add a column n_lodgers (number of people in the reservation)
-        - Remove rows with no lodgers (invalid reservations)
+        - Remove rows (reservations) with no lodgers (invalid reservations)
         """
         df["n_lodgers"] = df["adults"] + df["children"] + df["babies"]
         df.query("n_lodgers > 0", inplace=True)  ## invalid records
@@ -110,6 +110,19 @@ class Preprocessor:
         """
         code2country = load_country_code_mapping()
         df["country"] = df["country"].apply(lambda x: code2country.get(x, x))
+
+    @classmethod
+    def apply_all(cls, data_raw: pd.DataFrame):
+        df = data_raw.copy()
+
+        cls.convert_data_type(df)
+        cls.remove_invalid_records(df)
+        cls.add_arrival_date(df)
+        cls.add_is_last_minute_cancellation(df)
+        cls.add_actual_departure_date(df)
+        cls.add_meals(df)
+
+        return df
 
 
 def enrich_reservation_data(df: pd.DataFrame):
