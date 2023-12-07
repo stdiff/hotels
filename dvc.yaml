@@ -1,0 +1,12 @@
+stages:
+  retrieve_data:
+    cmd: poetry run retrieve_data
+    outs:
+      - data/raw/hotels.parquet
+  clean_data:
+    cmd: poetry run clean_data
+    deps:
+      - data/raw/hotels.parquet
+      - data/country_code.csv
+    outs:
+      - data/cleaned/bookings.parquet

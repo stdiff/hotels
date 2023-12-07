@@ -7,7 +7,7 @@ license = "MIT License"
 
 [tool.poetry.dependencies]
 python = ">=3.9.8,<3.10"
-streamlit = "1.28.0"
+streamlit = "1.29"
 pandas = "2.1.1"
 numpy = "1.26.1"
 altair = "5.1.2"
@@ -19,6 +19,11 @@ jupyterlab = "3.6.3"
 jupyterlab-code-formatter = "1.5.3"
 digautoprofiler = "^1.0.1"
 joblib = "^1.2.0"
+
+[tool.poetry.scripts]
+retrieve_data = "pipelines.retrieve_data:main"
+clean_data = "pipelines.clean_data:main"
+aggregate_data = "pipelines.aggregate_data:main"
 
 [tool.black]
 line-length = 120

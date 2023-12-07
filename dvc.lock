@@ -1,0 +1,27 @@
+schema: '2.0'
+stages:
+  data_retrieval:
+    cmd: poetry run retrieve_data
+    outs:
+    - path: data/raw/hotels.parquet
+      md5: a0c85aed92bfccc4c845abc2decfd9ca
+      size: 1188729
+  retrieve_data:
+    cmd: poetry run retrieve_data
+    outs:
+    - path: data/raw/hotels.parquet
+      md5: a0c85aed92bfccc4c845abc2decfd9ca
+      size: 1188729
+  clean_data:
+    cmd: poetry run clean_data
+    deps:
+    - path: data/country_code.csv
+      md5: 3155de16fb5522dc80c4f176379a0e42
+      size: 5312
+    - path: data/raw/hotels.parquet
+      md5: a0c85aed92bfccc4c845abc2decfd9ca
+      size: 1188729
+    outs:
+    - path: data/cleaned/bookings.parquet
+      md5: 64c868d42fb8bc5e5c683df0f3245b13
+      size: 2470874
