@@ -1,9 +1,9 @@
 """
 The purpose of this module is to make the raw data analysis-ready
 """
-
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 
 from hotels.load_data import load_raw_hotel_data, load_country_code_mapping, bookings_data_path
@@ -119,6 +119,14 @@ class Preprocessor:
         code2country = load_country_code_mapping()
         df["country"] = df["country"].apply(lambda x: code2country.get(x, x))
 
+    @staticmethod
+    def append_reservation_id(df: pd.DataFrame):
+        """
+        Append a unique ID for each reservation
+        """
+        s_number = pd.Series(np.arange(len(df)) + 1, index=df.index).apply(lambda v: f"{v:06d}")
+        df["reservation_id"] = df["hotel"].apply(lambda s: s[0]) + s_number
+
     @classmethod
     def apply_all(cls, data_raw: pd.DataFrame):
         df = data_raw.copy()
@@ -129,6 +137,7 @@ class Preprocessor:
         cls.add_is_last_minute_cancellation(df)
         cls.add_actual_departure_date(df)
         cls.add_meals(df)
+        cls.append_reservation_id(df)
 
         return df
 
