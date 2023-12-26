@@ -23,5 +23,5 @@ stages:
       size: 1188729
     outs:
     - path: data/cleaned/bookings.parquet
-      md5: c0bd20c8143e587ddc421a8f0204a093
-      size: 3203711
+      md5: cf988700b7fc782995bd3488e0b48c2c
+      size: 3349106

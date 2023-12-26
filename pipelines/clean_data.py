@@ -2,6 +2,7 @@
 The purpose of this module is to make the raw data analysis-ready
 """
 from typing import Optional
+import datetime as dt
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ def convert_country_4_human(data: pd.DataFrame):
     data["country"] = data["country"].apply(lambda x: code2country.get(x, x))
 
 
-def _rows_to_date(data: pd.DataFrame) -> pd.Series:
+def rows_to_date(data: pd.DataFrame) -> pd.Series:
     s_date_str = (
         data["arrival_date_day_of_month"].apply(lambda x: f"{x:02d}")
         + "/"
@@ -27,7 +28,7 @@ def _rows_to_date(data: pd.DataFrame) -> pd.Series:
     return pd.to_datetime(s_date_str, format="%d/%B/%Y")
 
 
-class Preprocessor:
+class DataCleaner:
     """all methods are static methods which manipulate dataframes in place except apply_all()"""
 
     @staticmethod
@@ -53,13 +54,20 @@ class Preprocessor:
 
         The last two columns are just plan. A lodger might leave before his departure date.
         """
-        df["arrival_date"] = _rows_to_date(df)
+        df["arrival_date"] = rows_to_date(df)
         df["n_nights"] = df["stays_in_week_nights"] + df["stays_in_weekend_nights"]
         df["departure_date"] = df["arrival_date"] + df["n_nights"].apply(pd.Timedelta, unit="D")
         df["total_transaction"] = df["n_nights"] * df["adr"]
 
         old_arrival_date_cols = [c for c in df.columns if c.startswith("arrival_date_")]
         df.drop(columns=old_arrival_date_cols, inplace=True)
+
+    @staticmethod
+    def add_reservation_date(df: pd.DataFrame):
+        """
+        Add dates of booking.
+        """
+        df["reservation_date"] = df["arrival_date"] - df["lead_time"].apply(dt.timedelta)
 
     @staticmethod
     def add_is_last_minute_cancellation(df: pd.DataFrame):
@@ -79,7 +87,7 @@ class Preprocessor:
         Some lodgers can leave the hotel before the date of the planned departure date.
         If the reservation_status is "Check-Out", then reservation_status_date is the actual departure date.
 
-        - Add a column actual_departure_date of the date of the actual departure date. If th
+        - Add a column actual_departure_date of the date of the actual departure date.
         - Add a column n_stay_actual of the number of actual stays.
         - Add a boolean column is_early_departure.
         """
@@ -134,6 +142,7 @@ class Preprocessor:
         cls.convert_data_type(df)
         cls.remove_invalid_records(df)
         cls.add_arrival_date(df)
+        cls.add_reservation_date(df)
         cls.add_is_last_minute_cancellation(df)
         cls.add_actual_departure_date(df)
         cls.add_meals(df)
@@ -144,7 +153,7 @@ class Preprocessor:
 
 def main():
     df_hotel_raw = load_raw_hotel_data()
-    df_hotel_cleaned = Preprocessor.apply_all(df_hotel_raw)
+    df_hotel_cleaned = DataCleaner.apply_all(df_hotel_raw)
 
     df_hotel_cleaned.to_parquet(bookings_data_path)
     print(f"SAVED: {bookings_data_path} ({len(df_hotel_cleaned)} rows)")
