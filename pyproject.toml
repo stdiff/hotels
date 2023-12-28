@@ -19,6 +19,8 @@ jupyterlab = "3.6.3"
 jupyterlab-code-formatter = "1.5.3"
 digautoprofiler = "^1.0.1"
 joblib = "^1.2.0"
+pytest = "^7.4.3"
+pandera = "^0.18.0"
 
 [tool.poetry.scripts]
 retrieve_data = "pipelines.retrieve_data:main"

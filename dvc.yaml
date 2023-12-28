@@ -1,11 +1,14 @@
 stages:
   retrieve_data:
     cmd: poetry run retrieve_data
+    deps:
+      - pipelines/retrieve_data.py
     outs:
       - data/raw/hotels.parquet
   clean_data:
     cmd: poetry run clean_data
     deps:
+      - pipelines/clean_data.py
       - data/raw/hotels.parquet
       - data/country_code.csv
     outs:

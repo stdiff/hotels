@@ -8,6 +8,10 @@ stages:
       size: 1188729
   retrieve_data:
     cmd: poetry run retrieve_data
+    deps:
+    - path: pipelines/retrieve_data.py
+      md5: e42ae209ff6b8235f25e2b39726d008a
+      size: 492
     outs:
     - path: data/raw/hotels.parquet
       md5: a0c85aed92bfccc4c845abc2decfd9ca
@@ -21,7 +25,10 @@ stages:
     - path: data/raw/hotels.parquet
       md5: a0c85aed92bfccc4c845abc2decfd9ca
       size: 1188729
+    - path: pipelines/clean_data.py
+      md5: eb3c6b9011aeea4c162db7276be65fb2
+      size: 6138
     outs:
     - path: data/cleaned/bookings.parquet
-      md5: cf988700b7fc782995bd3488e0b48c2c
-      size: 3349106
+      md5: 321e7c471f6c997f4b05f937c06a1514
+      size: 3348071

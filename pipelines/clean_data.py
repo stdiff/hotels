@@ -7,7 +7,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-from hotels.load_data import load_raw_hotel_data, load_country_code_mapping, bookings_data_path
+from hotels.load_data import load_raw_hotel_data, load_country_code_mapping, bookings_data_path, load_booking_data
 from hotels.models import ReservationStatus
 
 
@@ -38,9 +38,11 @@ class DataCleaner:
     @staticmethod
     def remove_invalid_records(df: pd.DataFrame):
         """
+        - Fix the data type of children
         - Add a column n_lodgers (number of people in the reservation)
         - Remove rows (reservations) with no lodgers (invalid reservations)
         """
+        df["children"] = df["children"].fillna(0).astype(int)
         df["n_lodgers"] = df["adults"] + df["children"] + df["babies"]
         df.query("n_lodgers > 0", inplace=True)  ## invalid records
 
@@ -159,5 +161,9 @@ def main():
     print(f"SAVED: {bookings_data_path} ({len(df_hotel_cleaned)} rows)")
 
 
+def data_testing():
+    df = load_booking_data()
+
+
 if __name__ == "__main__":
-    main()
+    data_testing()
