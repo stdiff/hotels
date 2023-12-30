@@ -4,3 +4,8 @@
 - [Data set](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11)
 - [tidytuesday](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11)
 - [Dashboard on Streamlit Cloud](https://stdiff-hotels-streamlit-app-m5ge83.streamlit.app/Booking_of_the_Day)
+
+
+## What is a PMS?
+
+- Links to the applications: https://hoteltechreport.com/operations/property-management-systems
