@@ -7,6 +7,10 @@ __pycache__/
 .ipynb_checkpoints/
 .python-version
 
+# EDA
+notebooks/*
+!notebooks/utils.py
+
 # credentials
 .streamlit/secrets.toml
 
