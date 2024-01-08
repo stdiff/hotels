@@ -13,3 +13,10 @@ stages:
       - data/country_code.csv
     outs:
       - data/cleaned/bookings.parquet
+  action_data:
+    cmd: poetry run action_data
+    deps:
+      - pipelines/aggregate_data.py
+      - data/cleaned/bookings.parquet
+    outs:
+      - data/aggregated/action.parquet

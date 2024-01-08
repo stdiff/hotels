@@ -9,6 +9,7 @@ from hotels import DATA_DIR
 COUNTRY_CODE_PATH = DATA_DIR / "country_code.csv"
 hotel_raw_data_path = DATA_DIR / "raw" / "hotels.parquet"
 bookings_data_path = DATA_DIR / "cleaned" / "bookings.parquet"
+action_data_path = DATA_DIR / "aggregated" / "action.parquet"
 
 
 def load_raw_hotel_data() -> pd.DataFrame:
@@ -23,3 +24,7 @@ def load_country_code_mapping() -> dict[str, str]:
 
 def load_booking_data() -> pd.DataFrame:
     return pd.read_parquet(bookings_data_path)
+
+
+def load_action_data() -> pd.DataFrame:
+    return pd.read_parquet(action_data_path)

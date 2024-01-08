@@ -27,7 +27,7 @@ ipywidgets = "^8.1.1"
 [tool.poetry.scripts]
 retrieve_data = "pipelines.retrieve_data:main"
 clean_data = "pipelines.clean_data:main"
-aggregate_data = "pipelines.aggregate_data:main"
+action_data = "pipelines.aggregate_data:build_action_data"
 
 [tool.black]
 line-length = 120
