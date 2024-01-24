@@ -30,10 +30,6 @@ messageFormat = "%(asctime)s %(message)s"
 
 [client]
 
-# Whether to enable st.cache.
-# Default: true
-caching = true
-
 # If false, makes your Streamlit script not draw to a Streamlit app.
 # Default: true
 # displayEnabled = true
