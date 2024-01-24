@@ -10,3 +10,9 @@ class ReservationStatus(str, Enum):
     check_out = "Check-Out"
     canceled = "Canceled"
     no_show = "No-Show"
+
+
+class TimeGranularity(str, Enum):
+    day = "Day"
+    week = "Week"
+    month = "Month"
