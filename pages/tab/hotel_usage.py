@@ -1,7 +1,8 @@
+import altair as alt
 import pandas as pd
 import streamlit as st
 
-from hotels.aggregations import compute_occupancy_rate
+from hotels.aggregations import compute_occupancy_rate, compute_occupancy_rate_by_room_type
 from hotels.dashboard import draw_daily_kpi_with_quoters
 from hotels.models import Hotel, TimeGranularity, TUTransform
 
@@ -17,6 +18,35 @@ def show_occupancy_timeline(
         df_occupancy_rate[["date", "occupancy_rate"]], tu_transform, kpi_is_proportion=True
     )
     st.altair_chart(chart_occupancy_rate, use_container_width=True)
+
+    st.subheader("Occupancy Rate by Room Type")
+    st.markdown("You can highlight one of room types by clicking its legend. Deselect can be done by")
+    df_occupancy_rate_by_room_type = compute_occupancy_rate_by_room_type(df_room_usage, df_room_count, hotel)
+
+    room_types = sorted(df_occupancy_rate_by_room_type["room_type"].drop_duplicates())
+    select_room_type = alt.selection_point(fields=["room_type"], bind="legend")
+    nearest = alt.selection_point(on="mouseover", nearest=True, empty=False, fields=["x", "y"])
+    chart_base: alt.Chart = (
+        alt.Chart(df_occupancy_rate_by_room_type)
+        .encode(
+            x=alt.X(f"{tu_transform}(date)").title("date"),
+            y=alt.Y("mean(occupancy_rate)").title("occupancy rate").axis(format="%"),
+            color=alt.Color("room_type").scale(domain=room_types),
+            opacity=alt.condition(select_room_type, alt.value(1.0), alt.value(0.1)),
+            tooltip=[
+                alt.Tooltip("room_type", title="Room Type"),
+                alt.Tooltip(f"{tu_transform}(date)"),
+                alt.Tooltip(f"min(date)", title="Start date"),
+                alt.Tooltip(f"max(date)", title="End date"),
+                alt.Tooltip(f"mean(occupancy_rate)", title="Occupancy Rate", format="0.1%"),
+            ],
+        )
+        .add_params(select_room_type)
+    )
+
+    chart_lines = chart_base.mark_line()
+    chart_layer = chart_base.mark_point().encode(opacity=alt.value(0)).add_params(nearest)
+    st.altair_chart(chart_lines + chart_layer, use_container_width=True)
 
 
 def show_number_of_guests(df_actions: pd.DataFrame, df_booking: pd.DataFrame, hotel: Hotel, tu_transform: TUTransform):

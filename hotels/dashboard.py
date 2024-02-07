@@ -59,9 +59,6 @@ def draw_daily_kpi_with_quoters(
         ],
     )
     chart_bar = chart_base.mark_bar(opacity=0.8)
-
     chart_quartiles = draw_quartiles(data["date"], data[kpi], text_format=format)
 
-    # chart_rule = alt.Chart(pd.DataFrame({"date": data["date"].min(), "y": [q1, q2, q3]})).mark_rule().encode(y="y")
-    # chart_text = chart_rule.mark_text(align="left", dy=-12, size=14).encode(x="date", y="y", text="y")
     return chart_bar + chart_quartiles
