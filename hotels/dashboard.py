@@ -62,3 +62,52 @@ def draw_daily_kpi_with_quoters(
     chart_quartiles = draw_quartiles(data["date"], data[kpi], text_format=format)
 
     return chart_bar + chart_quartiles
+
+
+def draw_kpi_by_cat(
+    data: pd.DataFrame,
+    tu_transform: TUTransform,
+    cat_field: str,
+    kpi_field: str,
+    *additional_kpis,
+) -> alt.Chart:
+    """
+
+    :param data: DataFrame[date, cat_field, kpi_field, additional_kpi1, ...]
+    :param tu_transform:
+    :param cat_field: categorical variable
+    :param kpi_field: numerical variable
+    :param additional_kpis: values you want to show in the tooltip
+    :return:
+    """
+    cats = sorted(data[cat_field].drop_duplicates())
+    cats_selector = alt.selection_point(name=cat_field + "/" + kpi_field, fields=[cat_field], bind="legend")
+    nearest = alt.selection_point(on="mouseover", nearest=True, empty=False, fields=["x", "y"])
+
+    tooltip = [
+        alt.Tooltip(cat_field),
+        alt.Tooltip(f"{tu_transform}(date)"),
+        alt.Tooltip(f"min(date)", title="Start date"),
+        alt.Tooltip(f"max(date)", title="End date"),
+        alt.Tooltip(f"mean({kpi_field})", format="0.2f", title=f"Avg {kpi_field} by day"),
+    ]
+
+    if additional_kpis:
+        tooltip.extend(
+            [alt.Tooltip(f"mean({kpi})", format="0.2f", title=f"Avg {kpi} by day") for kpi in additional_kpis]
+        )
+
+    chart_base: alt.Chart = (
+        alt.Chart(data)
+        .encode(
+            x=f"{tu_transform}(date)",
+            y=f"mean({kpi_field})",
+            color=alt.Color(f"{cat_field}:N").scale(domain=cats),
+            opacity=alt.condition(cats_selector, alt.value(1.0), alt.value(0.1)),
+            tooltip=tooltip,
+        )
+        .add_params(cats_selector)
+    )
+    chart_lines = chart_base.mark_line()
+    chart_layer = chart_base.mark_point().encode(opacity=alt.value(0)).add_params(nearest)
+    return chart_lines + chart_layer

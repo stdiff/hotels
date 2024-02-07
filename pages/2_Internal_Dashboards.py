@@ -9,6 +9,7 @@ from hotels.models import Hotel
 from hotels.load_data import load_booking_data, load_action_data
 
 from pages.tab.hotel_usage import show_hotel_usage_tab
+from pages.tab.marketing import show_marketing_tab
 from pages.tab.sales import show_sales_tab
 
 set_page_config()
@@ -86,7 +87,7 @@ def show_dashboard():
     df_room_usage = aggregate_room_usage(df_booking, df_actions)
     df_room_count = count_rooms(df_room_usage)
 
-    overview_tab, hotel_usage_tab, sales_tab = st.tabs(["Overview", "Hotel Usage", "Sales"])
+    overview_tab, hotel_usage_tab, sales_tab, marketing_tab = st.tabs(["Overview", "Hotel Usage", "Sales", "Marketing"])
 
     with overview_tab:
         st.header("Overview")
@@ -108,6 +109,9 @@ def show_dashboard():
 
     with sales_tab:
         show_sales_tab(df_booking, df_actions, df_room_usage, df_room_count, selected_hotel)
+
+    with marketing_tab:
+        show_marketing_tab(df_booking, df_actions, df_room_usage, df_room_count, selected_hotel)
 
 
 if __name__ == "__main__":

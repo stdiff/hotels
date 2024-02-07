@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from hotels import data_start_date, data_end_date_incl
-from hotels.dashboard import draw_daily_kpi_with_quoters
+from hotels.dashboard import draw_daily_kpi_with_quoters, draw_kpi_by_cat
 from hotels.models import Hotel, TimeGranularity, TUTransform
 
 
@@ -68,30 +68,42 @@ def show_sales_tab(
     st.markdown("You can highlight one of room types by clicking its legend. Deselect can be done by ")
     df_rev_por_by_room_type = df_sales.merge(df_room_usage).assign(RevPOR=lambda x: x["sales"] / x["n_occupied_rooms"])
 
-    room_types = sorted(df_rev_por_by_room_type["room_type"].drop_duplicates())
-    select_room_type = alt.selection_point(fields=["room_type"], bind="legend")
-    nearest = alt.selection_point(on="mouseover", nearest=True, empty=False, fields=["x", "y"])
-
-    chart_base: alt.Chart = (
-        alt.Chart(df_rev_por_by_room_type)
-        .encode(
-            x=f"{tu_transform}(date)",
-            y="mean(RevPOR)",
-            color=alt.Color("room_type:N").scale(domain=room_types),
-            opacity=alt.condition(select_room_type, alt.value(1.0), alt.value(0.1)),
-            tooltip=[
-                alt.Tooltip("room_type", title="Room Type"),
-                alt.Tooltip(f"{tu_transform}(date)"),
-                alt.Tooltip(f"min(date)", title="Start date"),
-                alt.Tooltip(f"max(date)", title="End date"),
-                alt.Tooltip("mean(RevPOR)", format="0.2f", title="Avg RevPOR by day"),
-                alt.Tooltip("mean(sales)", format="0.2f", title="Avg Sales by day"),
-                alt.Tooltip("mean(n_occupied_rooms)", format="0.1f", title="Avg sold rooms by day"),
-            ],
-        )
-        .add_params(select_room_type)
+    chart_rev_por_by_room_type = draw_kpi_by_cat(
+        df_rev_por_by_room_type.rename(
+            columns={"room_type": "Room Type", "sales": "Sales", "n_occupied_rooms": "number of occupied rooms"}
+        ),
+        tu_transform,
+        "Room Type",
+        "RevPOR",
+        "Sales",
+        "number of occupied rooms",
     )
-    chart_rev_por_by_room_type = chart_base.mark_line()
-    chart_layer = chart_base.mark_point().encode(opacity=alt.value(0)).add_params(nearest)
+    st.altair_chart(chart_rev_por_by_room_type, use_container_width=True)
 
-    st.altair_chart(chart_rev_por_by_room_type + chart_layer, use_container_width=True)
+    # room_types = sorted(df_rev_por_by_room_type["room_type"].drop_duplicates())
+    # select_room_type = alt.selection_point(fields=["room_type"], bind="legend")
+    # nearest = alt.selection_point(on="mouseover", nearest=True, empty=False, fields=["x", "y"])
+    #
+    # chart_base: alt.Chart = (
+    #     alt.Chart(df_rev_por_by_room_type)
+    #     .encode(
+    #         x=f"{tu_transform}(date)",
+    #         y="mean(RevPOR)",
+    #         color=alt.Color("room_type:N").scale(domain=room_types),
+    #         opacity=alt.condition(select_room_type, alt.value(1.0), alt.value(0.1)),
+    #         tooltip=[
+    #             alt.Tooltip("room_type", title="Room Type"),
+    #             alt.Tooltip(f"{tu_transform}(date)"),
+    #             alt.Tooltip(f"min(date)", title="Start date"),
+    #             alt.Tooltip(f"max(date)", title="End date"),
+    #             alt.Tooltip("mean(RevPOR)", format="0.2f", title="Avg RevPOR by day"),
+    #             alt.Tooltip("mean(sales)", format="0.2f", title="Avg Sales by day"),
+    #             alt.Tooltip("mean(n_occupied_rooms)", format="0.1f", title="Avg sold rooms by day"),
+    #         ],
+    #     )
+    #     .add_params(select_room_type)
+    # )
+    # chart_rev_por_by_room_type = chart_base.mark_line()
+    # chart_layer = chart_base.mark_point().encode(opacity=alt.value(0)).add_params(nearest)
+    #
+    # st.altair_chart(chart_rev_por_by_room_type + chart_layer, use_container_width=True)
