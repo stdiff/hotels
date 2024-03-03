@@ -1,5 +1,5 @@
-import numpy as np
 import altair as alt
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -149,7 +149,7 @@ def draw_cancellation_rate_by_lead_time(df_booking: pd.DataFrame, upper_limit: i
     st.altair_chart(chart, use_container_width=True)
 
 
-def draw_no_show_counts_by_day(df_booking: pd.DataFrame):
+def draw_no_show_counts_by_day(df_booking: pd.DataFrame, tu_transform: TUTransform):
     st.subheader("No show counts")
 
     df_count_no_show = pd.merge(
@@ -170,12 +170,111 @@ def draw_no_show_counts_by_day(df_booking: pd.DataFrame):
     st.altair_chart(chart, use_container_width=True)
 
 
-def show_cancellation_tab(df_booking: pd.DataFrame):
-    st.header("Cancellations")
+def draw_cohort_analysis_for_survival_rate(df_booking: pd.DataFrame):
+    st.subheader("Survival Rate")
 
-    tu_transform = TUTransform.yearweek
+    st.markdown(
+        """
+    - The survival rate is the proportion of non-cancelled reservations.
+    - This rate varies over time until the status of all reservations are fixed. 
+    - Survival rate + Cancellation Rate = 100% 
+    
+    **How to read the following heatmap**
+    
+    - lead time cohort: cohorts of reservations by lead time. 
+      Cohort 0: lead time = 0, Cohort 1: lead time is between 1 to 7, Cohort 2: lead time is between 8 to 14, ...
+    - time elapsed: how long had elapsed since the reservation was made. bin 0: 0 day. bin 1: 1 to 7 days, bin 2: 8 to 14 days, ...
+    
+    **Observations**
+    
+    - If the reservation is made on the arrival day, then less than 9% of the reservations are cancelled. 
+    - The survival rate is smaller than 60% if the lead time is longer than 84 days. (lead time cohort number &geq; 13.)
+    """
+    )
+    r_cancellation_rate = df_booking["is_canceled"].mean()
+    survival_rate = 1 - r_cancellation_rate
+    st.metric("survival rate (final state)", f"{survival_rate:0.2%}")
+
+    df_survival_rate = df_booking[
+        ["is_canceled", "lead_time", "reservation_status_date", "reservation_date", "arrival_date"]
+    ].assign(
+        time_elapsed=lambda x: (x["reservation_status_date"] - x["reservation_date"]).dt.days,
+        lead_time_cohort=lambda x: (x["lead_time"] + 6) // 7,
+        time_elapsed_bin=lambda x: (x["time_elapsed"] + 6) // 7,
+    )
+
+    def _compute_survival_date(data: pd.DataFrame) -> pd.DataFrame:
+        lead_time_cohort = data["lead_time_cohort"].iloc[0]
+        n_reservations = len(data)
+        gb = data.query("is_canceled == 1").groupby(["lead_time_cohort", "time_elapsed_bin"])
+
+        df = gb.agg(
+            n_cancel=("lead_time", "size"),
+            min_time_elapsed=("time_elapsed", "min"),
+            max_time_elapsed=("time_elapsed", "max"),
+            min_lead_time=("lead_time", "min"),
+            max_lead_time=("lead_time", "max"),
+        ).reset_index()
+
+        df = (
+            pd.DataFrame({"lead_time_cohort": lead_time_cohort, "time_elapsed_bin": range(0, lead_time_cohort + 1)})
+            .merge(df, how="left")
+            .fillna({"n_cancel": 0})
+            .sort_values(by="time_elapsed_bin")
+            .assign(cumsum_cancel=lambda x: x["n_cancel"].cumsum())
+        )
+
+        df["survival_rate"] = 1 - df["cumsum_cancel"] / n_reservations
+        return df
+
+    df_survival_rate = (
+        df_survival_rate.groupby("lead_time_cohort", as_index=False)
+        .apply(_compute_survival_date)
+        .reset_index(drop=True)
+    )
+
+    chart_survival_rate_base: alt.Chart = (
+        alt.Chart(df_survival_rate)
+        .transform_filter(alt.datum.lead_time_cohort <= 30)
+        .encode(
+            x=alt.X("time_elapsed_bin:O").title("Time Elapsed (binned)").axis(labelAngle=0),
+            y=alt.Y("lead_time_cohort:O").title("Lead Time Cohort"),
+            tooltip=[
+                alt.Tooltip("lead_time_cohort", title="Lead Time Cohort"),
+                alt.Tooltip("min_lead_time", title="Lead Time from"),
+                alt.Tooltip("max_lead_time", title="Lead Time to"),
+                alt.Tooltip("time_elapsed_bin", title="Time Elapsed Bin Nr"),
+                alt.Tooltip("min_time_elapsed", title="min time elapsed"),
+                alt.Tooltip("max_time_elapsed", title="max time elapsed"),
+                alt.Tooltip("survival_rate", title="Survival Rate", format="0.1%"),
+            ],
+        )
+    )
+
+    chart_survival_rate_heatmap = chart_survival_rate_base.mark_rect(opacity=0.7).encode(
+        color=alt.Color("survival_rate")
+        .scale(scheme="redblue", reverse=False, domainMid=survival_rate)
+        .legend(orient="top-right", format="%", title="Survival Rate")
+    )
+
+    chart_survival_rate_text = (
+        chart_survival_rate_base.transform_filter(alt.datum.lead_time_cohort == alt.datum.time_elapsed_bin)
+        .mark_text()
+        .encode(
+            text=alt.Text("survival_rate", format="0.1%"),
+            color=alt.condition(alt.datum.survival_rate < 0.5, alt.value("white"), alt.value("black")),
+        )
+    )
+
+    chart_survival_rate = chart_survival_rate_heatmap + chart_survival_rate_text
+    st.altair_chart(chart_survival_rate, use_container_width=True)
+
+
+def show_cancellation_tab(df_booking: pd.DataFrame, tu_transform: TUTransform):
+    st.header("Cancellations")
     df_cancellations = compute_cancellation_rate_by_day(df_booking)
     draw_cancellation_counts(df_cancellations, tu_transform)
     draw_cancellation_rate_by_country(df_booking)
     draw_cancellation_rate_by_lead_time(df_booking, upper_limit=365)
-    draw_no_show_counts_by_day(df_booking)
+    draw_cohort_analysis_for_survival_rate(df_booking)
+    draw_no_show_counts_by_day(df_booking, tu_transform)
