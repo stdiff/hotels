@@ -4,15 +4,13 @@ import streamlit as st
 
 from hotels.aggregations import compute_occupancy_rate, compute_occupancy_rate_by_room_type
 from hotels.dashboard import draw_daily_kpi_with_quoters
-from hotels.models import Hotel, TimeGranularity, TUTransform
+from hotels.models import TUTransform
 
 
-def show_occupancy_timeline(
-    df_room_usage: pd.DataFrame, df_room_count: pd.DataFrame, hotel: Hotel, tu_transform: TUTransform
-):
+def show_occupancy_timeline(df_room_usage: pd.DataFrame, df_room_count: pd.DataFrame, tu_transform: TUTransform):
     st.subheader("Occupancy Rate")
 
-    df_occupancy_rate = compute_occupancy_rate(df_room_usage, df_room_count, hotel)
+    df_occupancy_rate = compute_occupancy_rate(df_room_usage, df_room_count)
 
     chart_occupancy_rate = draw_daily_kpi_with_quoters(
         df_occupancy_rate[["date", "occupancy_rate"]], tu_transform, kpi_is_proportion=True
@@ -21,10 +19,10 @@ def show_occupancy_timeline(
 
     st.subheader("Occupancy Rate by Room Type")
     st.markdown("You can highlight one of room types by clicking its legend. Deselect can be done by")
-    df_occupancy_rate_by_room_type = compute_occupancy_rate_by_room_type(df_room_usage, df_room_count, hotel)
+    df_occupancy_rate_by_room_type = compute_occupancy_rate_by_room_type(df_room_usage, df_room_count)
 
     room_types = sorted(df_occupancy_rate_by_room_type["room_type"].drop_duplicates())
-    select_room_type = alt.selection_point(fields=["room_type"], bind="legend")
+    select_room_type = alt.selection_point(name="occupancy_timeline_selector", fields=["room_type"], bind="legend")
     nearest = alt.selection_point(on="mouseover", nearest=True, empty=False, fields=["x", "y"])
     chart_base: alt.Chart = (
         alt.Chart(df_occupancy_rate_by_room_type)
@@ -49,12 +47,12 @@ def show_occupancy_timeline(
     st.altair_chart(chart_lines + chart_layer, use_container_width=True)
 
 
-def show_number_of_guests(df_actions: pd.DataFrame, df_booking: pd.DataFrame, hotel: Hotel, tu_transform: TUTransform):
+def show_number_of_guests(df_actions: pd.DataFrame, df_booking: pd.DataFrame, tu_transform: TUTransform):
     st.subheader("Number of guests staying at night")
 
     df_n_guests = (
         df_actions.merge(df_booking[["reservation_id", "n_lodgers", "hotel"]])
-        .query("hotel == @hotel and action != 'departure'")
+        .query("action != 'departure'")
         .groupby("date", as_index=False)["n_lodgers"]
         .sum()
     )  # DataFrame[date, n_lodgers]
@@ -67,15 +65,13 @@ def show_number_of_guests(df_actions: pd.DataFrame, df_booking: pd.DataFrame, ho
     st.altair_chart(chart_n_guests, use_container_width=True)
 
 
-def show_parking_spaces_usage(
-    df_booking: pd.DataFrame, df_actions: pd.DataFrame, hotel: Hotel, tu_transform: TUTransform
-):
+def show_parking_spaces_usage(df_booking: pd.DataFrame, df_actions: pd.DataFrame, tu_transform: TUTransform):
     st.subheader("Parking space usage")
 
     measure_field = "required_car_parking_spaces"
     df_parking_spaces = (
         df_actions.merge(df_booking[["reservation_id", measure_field, "hotel"]])
-        .query("hotel == @hotel and action != 'departure'")
+        .query("action != 'departure'")
         .groupby("date", as_index=False)[measure_field]
         .sum()
     )
@@ -91,16 +87,11 @@ def show_hotel_usage_tab(
     df_actions: pd.DataFrame,
     df_room_usage: pd.DataFrame,
     df_room_count: pd.DataFrame,
-    selected_hotel: Hotel,
+    tu_transform: TUTransform,
 ):
     st.header("Hotel Usage")
     st.markdown("""Showing the average usage of the hotel by day""")
 
-    selected_time_granularity = st.selectbox(
-        "Time granularity", list(TimeGranularity), index=0, format_func=lambda g: g.value
-    )
-    tu_transform = TUTransform.from_time_granularity(selected_time_granularity)
-
-    show_occupancy_timeline(df_room_usage, df_room_count, selected_hotel, tu_transform)
-    show_number_of_guests(df_actions, df_booking, selected_hotel, tu_transform)
-    show_parking_spaces_usage(df_booking, df_actions, selected_hotel, tu_transform)
+    show_occupancy_timeline(df_room_usage, df_room_count, tu_transform)
+    show_number_of_guests(df_actions, df_booking, tu_transform)
+    show_parking_spaces_usage(df_booking, df_actions, tu_transform)

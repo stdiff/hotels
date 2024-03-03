@@ -5,7 +5,7 @@ import streamlit as st
 
 from hotels import data_start_date, data_end_date_incl
 from hotels.dashboard import set_page_config
-from hotels.models import Hotel
+from hotels.models import Hotel, TimeGranularity, TUTransform
 from hotels.load_data import load_booking_data, load_action_data
 
 from pages.tab.hotel_usage import show_hotel_usage_tab
@@ -69,55 +69,58 @@ def count_rooms(df_room_usage: pd.DataFrame) -> pd.DataFrame:
 
 
 def show_dashboard():
-    cols = st.columns(3)
-    with cols[0]:
-        selected_hotel = st.radio(label="hotel", options=list(Hotel), index=0, format_func=lambda h: h.value)
+    st.title("Internal Dashboards")
 
-    with cols[1]:
-        # todo: how do we go with this period?
-        min_date, max_date = dt.date(2015, 10, 1), dt.date(2017, 8, 31)
-        today = dt.date.today().replace(year=2016)
-        selected_date = pd.to_datetime(
-            st.date_input(label="date", value=today, min_value=min_date, max_value=max_date, format="YYYY-MM-DD")
+    with st.sidebar:
+        st.subheader("Hotel")
+        selected_hotel = st.radio(
+            label="hotel", options=list(Hotel), index=0, format_func=lambda h: h.value, label_visibility="collapsed"
         )
 
-    with cols[2]:
-        st.info(f"Any date between {min_date} and {max_date}")
+        # todo: how do we go with this period?
+        st.subheader("Period")
+        date_range_start, date_range_end_incl = pd.to_datetime(
+            st.date_input(
+                label="date",
+                value=(data_start_date, data_end_date_incl),
+                min_value=data_start_date,
+                max_value=data_end_date_incl,
+                format="YYYY-MM-DD",
+                label_visibility="collapsed",
+            )
+        )
+        st.info(f"Any date between {data_start_date} and {data_end_date_incl}")
+
+        st.subheader("Time granularity")
+        selected_time_granularity = st.radio(
+            "Time granularity",
+            list(TimeGranularity),
+            index=0,
+            format_func=lambda g: g.value,
+            key="time-granularity",
+            label_visibility="collapsed",
+        )
+        tu_transform = TUTransform.from_time_granularity(selected_time_granularity)
 
     df_booking, df_actions = load_data(selected_hotel)
     df_room_usage = aggregate_room_usage(df_booking, df_actions)
     df_room_count = count_rooms(df_room_usage)
 
-    overview_tab, hotel_usage_tab, sales_tab, marketing_tab, cancellations_tab = st.tabs(
-        ["Overview", "Hotel Usage", "Sales", "Marketing", "Cancellations"]
+    hotel_usage_tab, sales_tab, marketing_tab, cancellations_tab = st.tabs(
+        ["Hotel Usage", "Sales", "Marketing", "Cancellations"]
     )
 
-    with overview_tab:
-        st.header("Overview")
-
-        st.subheader("booking")
-        st.dataframe(df_booking, use_container_width=True)
-
-        st.subheader("actions")
-        st.dataframe(df_actions, use_container_width=True)
-
-        st.subheader("room usage")
-        st.dataframe(df_room_usage, use_container_width=True)
-
-        st.subheader("count rooms")
-        st.dataframe(df_room_count, use_container_width=True)
-
     with hotel_usage_tab:
-        show_hotel_usage_tab(df_booking, df_actions, df_room_usage, df_room_count, selected_hotel)
+        show_hotel_usage_tab(df_booking, df_actions, df_room_usage, df_room_count, tu_transform)
 
     with sales_tab:
-        show_sales_tab(df_booking, df_actions, df_room_usage, df_room_count, selected_hotel)
+        show_sales_tab(df_booking, df_actions, df_room_usage, tu_transform)
 
     with marketing_tab:
-        show_marketing_tab(df_booking, df_actions, df_room_usage, df_room_count, selected_hotel)
+        show_marketing_tab(df_booking, df_actions, tu_transform)
 
     with cancellations_tab:
-        show_cancellation_tab(df_booking)
+        show_cancellation_tab(df_booking, tu_transform)
 
 
 if __name__ == "__main__":

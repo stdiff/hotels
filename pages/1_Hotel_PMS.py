@@ -5,6 +5,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+from hotels import data_start_date, data_end_date_incl
 from hotels.dashboard import set_page_config
 from hotels.load_data import load_booking_data
 from hotels.models import Hotel, ReservationStatus
@@ -180,19 +181,19 @@ if __name__ == "__main__":
     st.title("Pseudo-PMS Dashboard")
     df_booking = load_data()
 
-    cols = st.columns(3)
-    with cols[0]:
-        selected_hotel = st.radio(label="hotel", options=list(Hotel), index=0, format_func=lambda h: h.value)
-
-    with cols[1]:
-        min_date, max_date = dt.date(2015, 7, 1), dt.date(2017, 8, 31)
-        today = dt.date.today().replace(year=2016)
-        selected_date = pd.to_datetime(
-            st.date_input(label="date", value=today, min_value=min_date, max_value=max_date, format="YYYY-MM-DD")
+    with st.sidebar:
+        st.subheader("Hotel")
+        selected_hotel = st.radio(
+            label="hotel", options=list(Hotel), index=0, format_func=lambda h: h.value, label_visibility="collapsed"
         )
 
-    with cols[2]:
-        st.info(f"Any date between {min_date} and {max_date}")
+        today = dt.date.today().replace(year=2016)
+        selected_date = pd.to_datetime(
+            st.date_input(
+                label="date", value=today, min_value=data_start_date, max_value=data_end_date_incl, format="YYYY-MM-DD"
+            )
+        )
+        st.info(f"Any date between {data_start_date} and {data_end_date_incl}")
 
     df_selected_date = df_booking.query("hotel == @selected_hotel").drop(columns=["hotel"], inplace=False)
     df_selected_date["flow_type"] = df_selected_date.apply(find_flow_type, selected_date=selected_date, axis=1)

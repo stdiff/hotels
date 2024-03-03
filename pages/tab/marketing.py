@@ -31,21 +31,14 @@ def draw_line_charts_top10(df_actions_ext: pd.DataFrame, tu_transform: TUTransfo
 def show_marketing_tab(
     df_booking: pd.DataFrame,
     df_actions: pd.DataFrame,
-    df_room_usage: pd.DataFrame,
-    df_room_count: pd.DataFrame,
-    selected_hotel: Hotel,
+    tu_transform: TUTransform,
 ):
     st.header("Marketing")
-    ## country (count reservations, count guests, count staying guests, revenue)
-
-    tu_transform = TUTransform.from_time_granularity(TimeGranularity.week)
 
     cols = ["hotel", "reservation_id", "adults", "children", "babies", "n_lodgers", "sales", "country"]
-    df_actions_ext = (
-        df_actions.merge(df_booking.assign(sales=lambda x: x["adr"] * x["n_nights"] / x["n_stay_actual"])[cols])
-        .query("hotel == @selected_hotel")
-        .query("action != 'departure'")
-    )  # DataFrame[reservation_id, date, action, hotel, adults, children, babies, n_lodgers, sales, country]
+    df_actions_ext = df_actions.merge(
+        df_booking.assign(sales=lambda x: x["adr"] * x["n_nights"] / x["n_stay_actual"])[cols]
+    ).query("action != 'departure'")
 
     st.subheader("Number of guests by country")
     kpi_field = "number of guests"
@@ -73,7 +66,6 @@ def show_marketing_tab(
 
     st.markdown(
         """
-    
     - [Marketing segment](https://www.coursera.org/articles/market-segmentation): 
       Segmentations of potential customers based on shared characteristics.
       - [Online TA](https://www.tripsavvy.com/best-online-travel-agencies-4776301): Online Travel Agency. e.g. Booking.com
