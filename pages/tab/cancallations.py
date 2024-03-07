@@ -126,7 +126,7 @@ def draw_cancellation_rate_by_country(df_booking: pd.DataFrame):
 
 
 def draw_cancellation_rate_by_lead_time(df_booking: pd.DataFrame, upper_limit: int):
-    st.subheader("Cancellation Rate by Lead Time")
+    st.subheader("Cancellation Rate by Lead Time", help="The time granularity is not applied.")
 
     df_truncated = df_booking.query("lead_time <= @upper_limit")
     df = pd.crosstab(df_truncated["lead_time"], df_truncated["is_canceled"]).reset_index()
@@ -164,9 +164,25 @@ def draw_no_show_counts_by_day(df_booking: pd.DataFrame, tu_transform: TUTransfo
     )["count"]
 
     for (key, value), col in zip(s_metric.items(), st.columns(len(s_metric))):
-        col.metric(key, value)
+        if key == "total_count":
+            col.metric(key, value)
+        else:
+            col.metric(key, value, help="statistics by day")
 
-    chart = alt.Chart(df_count_no_show).mark_bar().encode(x="arrival_date", y="count")
+    chart = (
+        alt.Chart(df_count_no_show)
+        .mark_bar()
+        .encode(
+            x=f"{tu_transform}(arrival_date)",
+            y=alt.Y("sum(count)").title("count"),
+            tooltip=[
+                alt.Tooltip(f"{tu_transform}(arrival_date)", title="Arrival date"),
+                alt.Tooltip("min(arrival_date)", title="Arrival date from"),
+                alt.Tooltip("max(arrival_date)", title="Arrival date to"),
+                alt.Tooltip("sum(count)", title="no-show count"),
+            ],
+        )
+    )
     st.altair_chart(chart, use_container_width=True)
 
 
@@ -175,9 +191,8 @@ def draw_cohort_analysis_for_survival_rate(df_booking: pd.DataFrame):
 
     st.markdown(
         """
-    - The survival rate is the proportion of non-cancelled reservations.
+    - The survival rate is the proportion of non-cancelled reservations. i.e. Survival rate + Cancellation Rate = 100% 
     - This rate varies over time until the status of all reservations are fixed. 
-    - Survival rate + Cancellation Rate = 100% 
     
     **How to read the following heatmap**
     
