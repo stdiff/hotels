@@ -1,12 +1,12 @@
-import altair as alt
 import pandas as pd
 import streamlit as st
 
 from hotels import data_start_date, data_end_date_incl
 from hotels.dashboard import draw_daily_kpi_with_quoters, draw_kpi_by_cat
-from hotels.models import Hotel, TimeGranularity, TUTransform
+from hotels.models import TUTransform
 
 
+@st.cache_data
 def compute_sales_by_day(df_booking: pd.DataFrame, df_actions: pd.DataFrame) -> pd.DataFrame:
     """
     :return: DataFrame[hotel, date, room_type, sales]

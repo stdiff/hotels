@@ -1,37 +1,10 @@
 import altair as alt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
 from hotels import data_start_date, data_end_date_incl
 from hotels.models import TUTransform
 from hotels.load_data import load_country_code_mapping
-
-
-def compute_cancellation_rate_by_day(df_booking: pd.DataFrame) -> pd.DataFrame:
-    """
-    :return: DataFrame[arrival_date, cancelled, checked-in, n_reservations, r_cancellation]
-    """
-    df_cancellations = (
-        df_booking.query("@data_start_date <= arrival_date <= @data_end_date_incl")
-        .groupby("arrival_date")
-        .apply(compute_cancellation_rate)
-        .reset_index()
-    )
-    return df_cancellations
-
-
-def compute_cancellation_rate_by_country(df_booking: pd.DataFrame) -> pd.DataFrame:
-    country_mapping = load_country_code_mapping()
-
-    df_cancellations = (
-        df_booking.query("@data_start_date <= arrival_date <= @data_end_date_incl")
-        .groupby("country")
-        .apply(compute_cancellation_rate)
-        .reset_index()
-        .assign(country=lambda x: x["country"].apply(lambda x: country_mapping.get(x, x)))
-    )
-    return df_cancellations
 
 
 def compute_cancellation_rate(data: pd.DataFrame) -> pd.Series:
@@ -51,6 +24,34 @@ def compute_cancellation_rate(data: pd.DataFrame) -> pd.Series:
             "r_cancellation": r_cancellation,
         }
     )
+
+
+@st.cache_data
+def compute_cancellation_rate_by_day(df_booking: pd.DataFrame) -> pd.DataFrame:
+    """
+    :return: DataFrame[arrival_date, cancelled, checked-in, n_reservations, r_cancellation]
+    """
+    df_cancellations = (
+        df_booking.query("@data_start_date <= arrival_date <= @data_end_date_incl")
+        .groupby("arrival_date")
+        .apply(compute_cancellation_rate)
+        .reset_index()
+    )
+    return df_cancellations
+
+
+@st.cache_data
+def compute_cancellation_rate_by_country(df_booking: pd.DataFrame) -> pd.DataFrame:
+    country_mapping = load_country_code_mapping()
+
+    df_cancellations = (
+        df_booking.query("@data_start_date <= arrival_date <= @data_end_date_incl")
+        .groupby("country")
+        .apply(compute_cancellation_rate)
+        .reset_index()
+        .assign(country=lambda x: x["country"].apply(lambda x: country_mapping.get(x, x)))
+    )
+    return df_cancellations
 
 
 def draw_cancellation_counts(df_cancellations: pd.DataFrame, tu_transform: TUTransform):

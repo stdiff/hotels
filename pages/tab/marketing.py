@@ -3,8 +3,32 @@ import pandas as pd
 import streamlit as st
 
 from hotels import data_start_date, data_end_date_incl
-from hotels.dashboard import draw_daily_kpi_with_quoters, draw_kpi_by_cat
-from hotels.models import Hotel, TimeGranularity, TUTransform
+from hotels.dashboard import draw_kpi_by_cat
+from hotels.models import TUTransform
+
+
+@st.cache_data
+def compute_actions_ext(df_booking: pd.DataFrame, df_actions: pd.DataFrame) -> pd.DataFrame:
+    cols = ["hotel", "reservation_id", "adults", "children", "babies", "n_lodgers", "sales", "country"]
+    df_actions_ext = df_actions.merge(
+        df_booking.assign(sales=lambda x: x["adr"] * x["n_nights"] / x["n_stay_actual"])[cols]
+    ).query("action != 'departure'")
+    return df_actions_ext
+
+
+@st.cache_data
+def compute_count_family(df_actions_ext: pd.DataFrame) -> pd.DataFrame:
+    df_count_family = (
+        df_actions_ext.assign(is_family=lambda x: x["children"] + x["babies"] > 0)
+        .groupby(["date", "is_family"])
+        .size()
+        .rename("n_reservations")
+        .reset_index()
+        .pivot_table(index="date", columns="is_family", values="n_reservations", aggfunc="sum", fill_value=0)
+        .melt(var_name="is_family", value_name="number of reservations", ignore_index=False)
+        .reset_index()
+    )
+    return df_count_family
 
 
 def draw_line_charts_top10(df_actions_ext: pd.DataFrame, tu_transform: TUTransform, cat_field: str, kpi_field: str):
@@ -35,10 +59,7 @@ def show_marketing_tab(
 ):
     st.header("Marketing")
 
-    cols = ["hotel", "reservation_id", "adults", "children", "babies", "n_lodgers", "sales", "country"]
-    df_actions_ext = df_actions.merge(
-        df_booking.assign(sales=lambda x: x["adr"] * x["n_nights"] / x["n_stay_actual"])[cols]
-    ).query("action != 'departure'")
+    df_actions_ext = compute_actions_ext(df_booking, df_actions)
 
     st.subheader("Number of guests by country")
     kpi_field = "number of guests"
@@ -49,16 +70,8 @@ def show_marketing_tab(
     draw_line_charts_top10(df_actions_ext, tu_transform, "country", kpi_field)
 
     st.subheader("Number of reservations of families")
-    df_count_family = (
-        df_actions_ext.assign(is_family=lambda x: x["children"] + x["babies"] > 0)
-        .groupby(["date", "is_family"])
-        .size()
-        .rename("n_reservations")
-        .reset_index()
-        .pivot_table(index="date", columns="is_family", values="n_reservations", aggfunc="sum", fill_value=0)
-        .melt(var_name="is_family", value_name="number of reservations", ignore_index=False)
-        .reset_index()
-    )
+
+    df_count_family = compute_count_family(df_actions_ext)
     chart_family_count = draw_kpi_by_cat(df_count_family, tu_transform, "is_family", "number of reservations")
     st.altair_chart(chart_family_count, use_container_width=True)
 

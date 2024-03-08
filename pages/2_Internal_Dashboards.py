@@ -16,7 +16,7 @@ from pages.tab.cancallations import show_cancellation_tab
 set_page_config()
 
 
-@st.cache_data(ttl="8h")
+@st.cache_data
 def load_data(hotel: Hotel) -> (pd.DataFrame, pd.DataFrame):
     df_booking = load_booking_data().query("hotel == @hotel")
     prefix = "C" if hotel == Hotel.city_hotel else "R"
@@ -27,7 +27,7 @@ def load_data(hotel: Hotel) -> (pd.DataFrame, pd.DataFrame):
     return df_booking, df_actions
 
 
-@st.cache_data(ttl="8h")
+@st.cache_data
 def aggregate_room_usage(df_booking: pd.DataFrame, df_actions: pd.DataFrame) -> pd.DataFrame:
     """
     :param df_booking:
@@ -76,21 +76,6 @@ def show_dashboard():
         selected_hotel = st.radio(
             label="hotel", options=list(Hotel), index=0, format_func=lambda h: h.value, label_visibility="collapsed"
         )
-
-        # todo: how do we go with this period?
-        st.subheader("Period")
-        date_range_start, date_range_end_incl = pd.to_datetime(
-            st.date_input(
-                label="date",
-                value=(data_start_date, data_end_date_incl),
-                min_value=data_start_date,
-                max_value=data_end_date_incl,
-                format="YYYY-MM-DD",
-                label_visibility="collapsed",
-            )
-        )
-        st.info(f"Any date between {data_start_date} and {data_end_date_incl}")
-
         st.subheader("Time granularity")
         selected_time_granularity = st.radio(
             "Time granularity",

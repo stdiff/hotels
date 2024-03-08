@@ -2,9 +2,36 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from hotels.aggregations import compute_occupancy_rate, compute_occupancy_rate_by_room_type
 from hotels.dashboard import draw_daily_kpi_with_quoters
 from hotels.models import TUTransform
+
+
+@st.cache_data
+def compute_occupancy_rate_by_room_type(df_room_usage: pd.DataFrame, df_room_count: pd.DataFrame) -> pd.DataFrame:
+    """
+    PK = (hotel, date, room_type)
+    :return: DataFrame[hotel, date, room_type, n_occupied_rooms, n_available_rooms, occupancy_rate]
+    """
+    df_occupancy_rate_by_room_type = df_room_usage.merge(df_room_count).assign(
+        occupancy_rate=lambda x: x["n_occupied_rooms"] / x["n_rooms"]
+    )
+    return df_occupancy_rate_by_room_type
+
+
+@st.cache_data
+def compute_occupancy_rate(df_room_usage: pd.DataFrame, df_room_count: pd.DataFrame) -> pd.DataFrame:
+    """
+    PK = (hotel, date)
+
+    :return: DataFrame[hotel, date, n_occupied_rooms, n_available_rooms, occupancy_rate]
+    """
+    df_occupancy_rate = (
+        df_room_usage.groupby(["hotel", "date"], as_index=False)["n_occupied_rooms"]
+        .sum()
+        .merge(df_room_count.groupby("hotel")["n_rooms"].sum().rename("n_available_rooms").reset_index())
+        .assign(occupancy_rate=lambda x: x["n_occupied_rooms"] / x["n_available_rooms"])
+    )
+    return df_occupancy_rate
 
 
 def show_occupancy_timeline(df_room_usage: pd.DataFrame, df_room_count: pd.DataFrame, tu_transform: TUTransform):
