@@ -16,8 +16,8 @@ The data files can be obtained at
 
 ### 📖 Hotel PMS Dashboard
 
-A hotel PMS (property management system) is a system managing the information about reservations of hotel rooms:
-Who reserved a room of type X for the period from T1 to T2, the status of the reservation and so on.
+A hotel PMS (Property Management System) is a system that manages information about hotel room reservations:
+Who reserved a room of type X for the period T1 to T2, the status of the reservation, and so on.
 
 This dashboard reproduces the PMS dashboard.
 
