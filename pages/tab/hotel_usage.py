@@ -45,7 +45,7 @@ def show_occupancy_timeline(df_room_usage: pd.DataFrame, df_room_count: pd.DataF
     st.altair_chart(chart_occupancy_rate, use_container_width=True)
 
     st.subheader("Occupancy Rate by Room Type")
-    st.markdown("You can highlight one of room types by clicking its legend. Deselect can be done by")
+    st.markdown("You can highlight one of room types by clicking its legend.")
     df_occupancy_rate_by_room_type = compute_occupancy_rate_by_room_type(df_room_usage, df_room_count)
 
     room_types = sorted(df_occupancy_rate_by_room_type["room_type"].drop_duplicates())

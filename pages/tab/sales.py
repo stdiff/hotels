@@ -40,6 +40,12 @@ def show_sales_tab(
     st.altair_chart(chart, use_container_width=True)
 
     st.subheader("Revenue Per Occupied Room")
+    st.markdown(
+        """
+        RevPOR ([Revenue Per Occupied Room](https://www.investopedia.com/terms/r/revpor.asp)) measures 
+        the performance (in €) of the occupancy of a single room on average.
+        """
+    )
 
     df_rev_por = (
         df_sales.merge(df_room_usage)
@@ -55,7 +61,7 @@ def show_sales_tab(
     st.altair_chart(chart, use_container_width=True)
 
     st.subheader("RevPOR by Room Type")
-    st.markdown("You can highlight one of room types by clicking its legend. Deselect can be done by ")
+    st.markdown("You can highlight one of room types by clicking its legend.")
     df_rev_por_by_room_type = df_sales.merge(df_room_usage).assign(RevPOR=lambda x: x["sales"] / x["n_occupied_rooms"])
 
     chart_rev_por_by_room_type = draw_kpi_by_cat(

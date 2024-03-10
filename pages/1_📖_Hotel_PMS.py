@@ -178,7 +178,7 @@ def show_evening_tab(selected_hotel: Hotel, selected_date: dt.date, df_selected_
 
 
 if __name__ == "__main__":
-    st.title("Pseudo-PMS Dashboard")
+    st.title("📖 Hotel PMS Dashboard")
     df_booking = load_data()
 
     with st.sidebar:

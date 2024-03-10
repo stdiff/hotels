@@ -69,7 +69,7 @@ def count_rooms(df_room_usage: pd.DataFrame) -> pd.DataFrame:
 
 
 def show_dashboard():
-    st.title("Internal Dashboards")
+    st.title("📊 Internal Dashboards")
 
     with st.sidebar:
         st.subheader("Hotel")
