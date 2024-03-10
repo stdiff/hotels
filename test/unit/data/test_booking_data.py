@@ -17,6 +17,7 @@ class ReservationSchema(pa.DataFrameModel):
 
 def test_booking_data():
     df = load_booking_data()
+    assert not df.empty
 
     try:
         ReservationSchema.validate(df, lazy=True)

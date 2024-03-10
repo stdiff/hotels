@@ -42,6 +42,7 @@ class ActionDataSchema(pa.DataFrameModel):
 
 def test_action_data():
     df = load_action_data()
+    assert not df.empty
 
     try:
         ActionDataSchema.validate(df, lazy=True)

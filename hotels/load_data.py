@@ -11,7 +11,7 @@ hotel_raw_data_path = DATA_DIR / "raw" / "hotels.parquet"
 bookings_data_path = DATA_DIR / "cleaned" / "bookings.parquet"
 action_data_path = DATA_DIR / "aggregated" / "action.parquet"
 
-fs = dvc.DVCFileSystem(rev="main")
+fs = dvc.DVCFileSystem(uel="https://github.com/stdiff/hotels", rev="main")
 
 
 def load_raw_hotel_data() -> pd.DataFrame:
