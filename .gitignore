@@ -13,6 +13,7 @@ notebooks/*
 
 # credentials
 .streamlit/secrets.toml
+.envrc
 
 # temporary working directory
 tmp/
