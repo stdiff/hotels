@@ -12,5 +12,5 @@ phases:
     pre_build:
         commands:
             - poetry run black --check */*.py */*/*.py
-            - dvc status -q # If the pipeline is not up to date, the build is failed.
+            - poetry run dvc status -q # If the pipeline is not up to date, the build is failed.
             - poetry run pytest # unit test
