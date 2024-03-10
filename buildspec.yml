@@ -5,6 +5,7 @@ phases:
         runtime-versions:
             python: 3.9
         commands:
+            - curl -sSL https://install.python-poetry.org | python3 - --version 1.8.2
             - poetry env use system
             - poetry install
     pre_build:
