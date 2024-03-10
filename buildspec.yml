@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            python: 3.9
+        commands:
+            - poetry env use system
+            - poetry install
+    pre_build:
+        commands:
+            - poetry run black --check */*.py */*/*.py
+            - dvc status -q # If the pipeline is not up to date, the build is failed.
+            - poetry run pytest # unit test
