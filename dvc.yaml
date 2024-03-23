@@ -19,4 +19,4 @@ stages:
       - pipelines/aggregate_data.py
       - data/cleaned/bookings.parquet
     outs:
-      - data/aggregated/action.parquet
+      - data/aggregated/actions.parquet

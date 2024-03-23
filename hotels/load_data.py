@@ -9,7 +9,7 @@ from hotels import DATA_DIR
 
 hotel_raw_data_path = DATA_DIR / "raw" / "hotels.parquet"
 bookings_data_path = DATA_DIR / "cleaned" / "bookings.parquet"
-action_data_path = DATA_DIR / "aggregated" / "action.parquet"
+actions_data_path = DATA_DIR / "aggregated" / "actions.parquet"
 
 fs = dvc.DVCFileSystem(uel="https://github.com/stdiff/hotels", rev="main")
 

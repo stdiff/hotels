@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm.auto import tqdm
 
-from hotels.load_data import load_booking_data, action_data_path
+from hotels.load_data import load_booking_data, actions_data_path
 
 tqdm.pandas()
 
@@ -23,4 +23,4 @@ def build_action_data():
         .to_list(),
         axis=0,
     )
-    df_actions.to_parquet(action_data_path)
+    df_actions.to_parquet(actions_data_path)

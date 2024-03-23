@@ -39,9 +39,11 @@ stages:
       md5: 321e7c471f6c997f4b05f937c06a1514
       size: 3348071
     - path: pipelines/aggregate_data.py
-      md5: b7880d5009447573f0a578581c6d04bf
-      size: 843
+      hash: md5
+      md5: d68f1a265d3c9ea0b2a317533e7b591f
+      size: 845
     outs:
-    - path: data/aggregated/action.parquet
-      md5: 0df4c42df4058738e19b31810e7c8f51
+    - path: data/aggregated/actions.parquet
+      hash: md5
+      md5: 1c1749bf73df8aacc968f1e01d87e435
       size: 1298078
