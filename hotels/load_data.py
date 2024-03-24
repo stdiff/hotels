@@ -32,5 +32,5 @@ def load_booking_data() -> pd.DataFrame:
 
 
 def load_action_data() -> pd.DataFrame:
-    with fs.open("/data/aggregated/action.parquet") as fo:
+    with fs.open("/data/aggregated/actions.parquet") as fo:
         return pd.read_parquet(fo)
